@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>图片压缩转WebP · 水印工具</title>
+<title>图片批量压缩 · WebP / AVIF 水印工具</title>
 <style>
     * {
         margin: 0;
@@ -15,7 +15,7 @@
     body {
         background: #f3f4f6;
         padding: 32px 16px;
-        max-width: 960px;
+        max-width: 1000px;
         margin: 0 auto;
         color: #1f2937;
     }
@@ -127,38 +127,70 @@
         background: #475569;
     }
 
-    .preview-wrap {
-        margin-top: 28px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
+    .progress-text {
+        font-size: 14px;
+        color: #4b5563;
+        margin-left: 8px;
     }
 
-    .preview-card {
+    .list-title {
+        margin-top: 28px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .image-list {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .image-card {
         border: 1px solid #e5e7eb;
         border-radius: 12px;
-        padding: 16px;
+        padding: 12px;
+        background: #fff;
     }
 
-    .preview-card h3 {
-        font-size: 15px;
-        margin-bottom: 12px;
-        color: #4b5563;
-    }
-
-    .preview-img {
+    .image-card img {
         width: 100%;
-        max-height: 320px;
+        height: 140px;
         object-fit: contain;
         border-radius: 8px;
         background: #f9fafb;
     }
 
-    .info-text {
-        margin-top: 10px;
+    .image-card .card-info {
+        margin-top: 8px;
         font-size: 13px;
+        color: #4b5563;
+        line-height: 1.5;
+        word-break: break-all;
+    }
+
+    .image-card .card-status {
+        margin-top: 6px;
+        font-size: 12px;
         color: #6b7280;
-        line-height: 1.6;
+    }
+
+    .image-card .download-btn {
+        margin-top: 10px;
+        width: 100%;
+        padding: 8px;
+        border: none;
+        border-radius: 8px;
+        background: #2563eb;
+        color: #fff;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .image-card .download-btn:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
     }
 
     .switch {
@@ -172,27 +204,29 @@
         width: 16px;
         height: 16px;
     }
-
-    @media (max-width: 640px) {
-        .preview-wrap {
-            grid-template-columns: 1fr;
-        }
-    }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/avif-wasm@0.1.10/dist/avif.js"></script>
 </head>
 
 <body>
 <div class="container">
-    <h1>图片压缩转 WebP · 水印工具</h1>
+    <h1>图片批量压缩 · WebP / AVIF 水印工具</h1>
 
     <div class="upload-area" id="uploadBox">
-        <p>点击或拖拽图片到此处上传</p>
-        <input type="file" id="fileInput" accept="image/*" />
+        <p>点击或拖拽图片到此处上传，支持多张</p>
+        <input type="file" id="fileInput" accept="image/*" multiple />
     </div>
 
     <div class="section-title">压缩设置</div>
-
     <div class="control-grid">
+        <div class="control-item">
+            <label>输出格式</label>
+            <select id="outputFormat">
+                <option value="webp">WebP（速度快，兼容性好）</option>
+                <option value="avif">AVIF（压缩率更高，编码慢）</option>
+            </select>
+        </div>
         <div class="control-item">
             <label>压缩质量：<span id="qualityVal">0.7</span></label>
             <input type="range" id="qualitySlider" min="0.1" max="1" step="0.05" value="0.7" />
@@ -200,23 +234,19 @@
     </div>
 
     <div class="section-title">水印设置</div>
-
     <div class="control-grid">
         <div class="control-item">
             <label>水印文字</label>
-            <input type="text" id="watermarkText" placeholder="例如：SAMPLE" value="SAMPLE" />
+            <input type="text" id="watermarkText" placeholder="例如：weite.net" value="weite.net" />
         </div>
-
         <div class="control-item">
             <label>字体大小：<span id="fontSizeVal">32</span> px</label>
             <input type="range" id="fontSizeSlider" min="12" max="120" step="1" value="32" />
         </div>
-
         <div class="control-item">
             <label>透明度：<span id="opacityVal">0.3</span></label>
             <input type="range" id="opacitySlider" min="0.05" max="1" step="0.05" value="0.3" />
         </div>
-
         <div class="control-item">
             <label>水印位置</label>
             <select id="watermarkPosition">
@@ -228,22 +258,18 @@
                 <option value="rightBottom" selected>右下</option>
             </select>
         </div>
-
         <div class="control-item">
             <label>颜色</label>
             <input type="color" id="watermarkColor" value="#ffffff" />
         </div>
-
         <div class="control-item">
             <label>描边颜色</label>
             <input type="color" id="strokeColor" value="#000000" />
         </div>
-
         <div class="control-item switch">
             <input type="checkbox" id="enableWatermark" checked />
             <label for="enableWatermark">启用水印</label>
         </div>
-
         <div class="control-item switch">
             <input type="checkbox" id="enableStroke" checked />
             <label for="enableStroke">启用文字描边</label>
@@ -251,23 +277,13 @@
     </div>
 
     <div class="row">
-        <button class="btn" id="compressBtn" disabled>开始压缩并导出 WebP</button>
-        <button class="btn btn-secondary" id="previewBtn" disabled>预览水印效果</button>
-        <button class="btn" id="downloadBtn" disabled>下载 WebP 图片</button>
+        <button class="btn" id="compressBtn" disabled>批量压缩处理</button>
+        <button class="btn btn-secondary" id="clearBtn" disabled>清空列表</button>
+        <span class="progress-text" id="progressText"></span>
     </div>
 
-    <div class="preview-wrap">
-        <div class="preview-card">
-            <h3>原图</h3>
-            <img class="preview-img" id="originImg" />
-            <div class="info-text" id="originInfo"></div>
-        </div>
-        <div class="preview-card">
-            <h3>处理后预览</h3>
-            <img class="preview-img" id="compressedImg" />
-            <div class="info-text" id="compressedInfo"></div>
-        </div>
-    </div>
+    <div class="list-title">图片列表</div>
+    <div class="image-list" id="imageList"></div>
 </div>
 
 <script>
@@ -275,13 +291,11 @@
     const fileInput = document.getElementById("fileInput");
     const qualitySlider = document.getElementById("qualitySlider");
     const qualityVal = document.getElementById("qualityVal");
+    const outputFormat = document.getElementById("outputFormat");
     const compressBtn = document.getElementById("compressBtn");
-    const previewBtn = document.getElementById("previewBtn");
-    const downloadBtn = document.getElementById("downloadBtn");
-    const originImg = document.getElementById("originImg");
-    const compressedImg = document.getElementById("compressedImg");
-    const originInfo = document.getElementById("originInfo");
-    const compressedInfo = document.getElementById("compressedInfo");
+    const clearBtn = document.getElementById("clearBtn");
+    const progressText = document.getElementById("progressText");
+    const imageList = document.getElementById("imageList");
 
     const watermarkText = document.getElementById("watermarkText");
     const fontSizeSlider = document.getElementById("fontSizeSlider");
@@ -294,10 +308,15 @@
     const enableWatermark = document.getElementById("enableWatermark");
     const enableStroke = document.getElementById("enableStroke");
 
-    let originFile = null;
-    let compressedBlob = null;
+    let imageItems = [];
+    let avifEncoder = null;
+    let processing = false;
 
-    // ========== 工具函数 ==========
+    async function initAvif() {
+        avifEncoder = await AvifWasm.create();
+    }
+    initAvif();
+
     function formatSize(bytes) {
         if (!bytes) return "";
         if (bytes < 1024) return bytes + " B";
@@ -317,7 +336,6 @@
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
-    // ========== 事件绑定 ==========
     qualitySlider.addEventListener("input", () => {
         qualityVal.textContent = qualitySlider.value;
     });
@@ -345,43 +363,80 @@
         e.preventDefault();
         uploadBox.style.borderColor = "#9ca3af";
         if (e.dataTransfer.files.length) {
-            handleFile(e.dataTransfer.files[0]);
+            handleFiles(e.dataTransfer.files);
         }
     });
 
     fileInput.addEventListener("change", () => {
-        if (fileInput.files[0]) {
-            handleFile(fileInput.files[0]);
+        if (fileInput.files.length) {
+            handleFiles(fileInput.files);
         }
     });
 
-    function handleFile(file) {
-        if (!file.type.startsWith("image/")) {
+    clearBtn.addEventListener("click", () => {
+        imageItems = [];
+        imageList.innerHTML = "";
+        compressBtn.disabled = true;
+        clearBtn.disabled = true;
+        progressText.textContent = "";
+    });
+
+    function handleFiles(fileList) {
+        const files = Array.from(fileList).filter((file) =>
+            file.type.startsWith("image/")
+        );
+
+        if (!files.length) {
             alert("请选择图片文件");
             return;
         }
 
-        originFile = file;
-        compressedBlob = null;
-        downloadBtn.disabled = true;
+        files.forEach((file) => {
+            const item = {
+                id: Date.now() + "_" + Math.random().toString(36).slice(2, 8),
+                file: file,
+                name: file.name,
+                originalSize: file.size,
+                originalUrl: URL.createObjectURL(file),
+                processed: false,
+                blob: null,
+                outputUrl: null
+            };
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            originImg.src = e.target.result;
-            originInfo.textContent = `文件：${file.name}  大小：${formatSize(file.size)}`;
-            compressBtn.disabled = false;
-            previewBtn.disabled = false;
-            compressedImg.src = "";
-            compressedInfo.textContent = "";
-        };
-        reader.readAsDataURL(file);
+            imageItems.push(item);
+            renderImageCard(item);
+        });
+
+        compressBtn.disabled = false;
+        clearBtn.disabled = false;
     }
 
-    // ========== 绘制水印 ==========
+    function renderImageCard(item) {
+        const card = document.createElement("div");
+        card.className = "image-card";
+        card.id = "card-" + item.id;
+
+        card.innerHTML = `
+            <img src="${item.originalUrl}" alt="${item.name}" />
+            <div class="card-info">
+                <div><strong>${item.name}</strong></div>
+                <div>原始：${formatSize(item.originalSize)}</div>
+                <div class="card-status" id="status-${item.id}">等待处理</div>
+            </div>
+            <button class="download-btn" id="download-${item.id}" disabled>下载</button>
+        `;
+
+        imageList.appendChild(card);
+
+        card.querySelector(`#download-${item.id}`).addEventListener("click", () => {
+            downloadItem(item);
+        });
+    }
+
     function drawWatermark(ctx, width, height) {
         if (!enableWatermark.checked) return;
 
-        const text = watermarkText.value.trim() || "SAMPLE";
+        const text = watermarkText.value.trim() || "weite.net";
         const fontSize = parseInt(fontSizeSlider.value, 10);
         const opacity = parseFloat(opacitySlider.value);
         const position = watermarkPosition.value;
@@ -450,84 +505,105 @@
         ctx.restore();
     }
 
-    // ========== 图片处理 ==========
-    async function processImage() {
-        if (!originFile) return null;
+    async function processItem(item) {
+        const statusEl = document.getElementById("status-" + item.id);
+        const downloadBtn = document.getElementById("download-" + item.id);
 
-        const img = new Image();
-        img.src = URL.createObjectURL(originFile);
-        await new Promise((resolve) => (img.onload = resolve));
+        statusEl.textContent = "处理中...";
+        downloadBtn.disabled = true;
 
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
+        try {
+            const img = new Image();
+            img.src = item.originalUrl;
+            await new Promise((resolve) => (img.onload = resolve));
 
-        drawWatermark(ctx, canvas.width, canvas.height);
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
 
-        const quality = parseFloat(qualitySlider.value);
+            drawWatermark(ctx, canvas.width, canvas.height);
 
-        return new Promise((resolve) => {
-            canvas.toBlob(
-                (blob) => resolve(blob),
-                "image/webp",
-                quality
-            );
-        });
+            const fmt = outputFormat.value;
+            const quality = Number(qualitySlider.value);
+            let blob;
+
+            if (fmt === "webp") {
+                blob = await new Promise((resolve) => {
+                    canvas.toBlob(resolve, "image/webp", quality);
+                });
+            } else if (fmt === "avif") {
+                if (!avifEncoder) {
+                    throw new Error("AVIF编码器未加载");
+                }
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const avifBuf = avifEncoder.encode(
+                    imgData.data,
+                    canvas.width,
+                    canvas.height,
+                    quality
+                );
+                blob = new Blob([avifBuf], { type: "image/avif" });
+            }
+
+            if (item.outputUrl) {
+                URL.revokeObjectURL(item.outputUrl);
+            }
+
+            item.processed = true;
+            item.blob = blob;
+            item.outputUrl = URL.createObjectURL(blob);
+
+            const card = document.getElementById("card-" + item.id);
+            if (card) {
+                card.querySelector("img").src = item.outputUrl;
+            }
+
+            statusEl.textContent = `完成 · ${formatSize(blob.size)}`;
+            downloadBtn.disabled = false;
+        } catch (err) {
+            statusEl.textContent = "处理失败";
+            console.error(err);
+        }
     }
 
-    // ========== 预览水印 ==========
-    previewBtn.addEventListener("click", async () => {
-        previewBtn.disabled = true;
-        previewBtn.textContent = "处理中...";
+    async function runBatchProcess() {
+        if (processing) return;
 
-        const blob = await processImage();
-        if (blob) {
-            compressedBlob = blob;
-            compressedImg.src = URL.createObjectURL(blob);
-            compressedInfo.textContent =
-                `预览水印效果  格式：WebP  估算大小：${formatSize(blob.size)}`;
-            downloadBtn.disabled = false;
-        }
-
-        previewBtn.disabled = false;
-        previewBtn.textContent = "预览水印效果";
-    });
-
-    // ========== 压缩并导出 WebP ==========
-    compressBtn.addEventListener("click", async () => {
+        processing = true;
         compressBtn.disabled = true;
-        compressBtn.textContent = "处理中...";
 
-        const blob = await processImage();
-        if (blob) {
-            compressedBlob = blob;
-            compressedImg.src = URL.createObjectURL(blob);
-            compressedInfo.textContent =
-                `格式：WebP  大小：${formatSize(blob.size)}`;
-            downloadBtn.disabled = false;
+        const total = imageItems.length;
+        let done = 0;
+
+        for (const item of imageItems) {
+            progressText.textContent = `处理中：${done + 1} / ${total}`;
+            await processItem(item);
+            done++;
+            progressText.textContent = `处理中：${done} / ${total}`;
         }
 
+        progressText.textContent = `已完成 ${total} 张`;
+        processing = false;
         compressBtn.disabled = false;
-        compressBtn.textContent = "开始压缩并导出 WebP";
-    });
+    }
 
-    // ========== 下载 ==========
-    downloadBtn.addEventListener("click", () => {
-        if (!compressedBlob) return;
+    compressBtn.addEventListener("click", runBatchProcess);
+
+    function downloadItem(item) {
+        if (!item.processed || !item.blob) return;
 
         const a = document.createElement("a");
-        const url = URL.createObjectURL(compressedBlob);
-        a.href = url;
+        a.href = item.outputUrl;
 
-        const baseName = originFile.name.replace(/\.[^.]+$/, "");
-        a.download = baseName + ".webp";
+        const baseName = item.name.replace(/\.[^.]+$/, "");
+        const ext = outputFormat.value;
+        a.download = `${baseName}.weite.net.${ext}`;
         a.click();
-
-        URL.revokeObjectURL(url);
-    });
+    }
 </script>
 </body>
 </html>
+
 
