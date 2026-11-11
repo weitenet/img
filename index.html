@@ -205,8 +205,11 @@
         height: 16px;
     }
 </style>
-
-<script src="https://cdn.jsdelivr.net/npm/avif-wasm@0.1.10/dist/avif.js"></script>
+<script type="module">
+import { encode as avifEncode, init as avifInit } from 'https://cdn.jsdelivr.net/npm/@jsquash/avif@2.1.1/+esm';
+window.avifEncode = avifEncode;
+window.avifInit = avifInit;
+</script>
 </head>
 
 <body>
@@ -230,6 +233,10 @@
         <div class="control-item">
             <label>压缩质量：<span id="qualityVal">0.7</span></label>
             <input type="range" id="qualitySlider" min="0.1" max="1" step="0.05" value="0.7" />
+        </div>
+        <div class="control-item">
+            <label>长边最大像素（防止大图崩溃）</label>
+            <input type="number" id="maxLongSide" value="3840" min="1000" max="8000" step="100">
         </div>
     </div>
 
@@ -296,6 +303,7 @@
     const clearBtn = document.getElementById("clearBtn");
     const progressText = document.getElementById("progressText");
     const imageList = document.getElementById("imageList");
+    const maxLongSideInput = document.getElementById("maxLongSide");
 
     const watermarkText = document.getElementById("watermarkText");
     const fontSizeSlider = document.getElementById("fontSizeSlider");
@@ -309,13 +317,17 @@
     const enableStroke = document.getElementById("enableStroke");
 
     let imageItems = [];
-    let avifEncoder = null;
+    let avifReady = false;
     let processing = false;
 
-    async function initAvif() {
-        avifEncoder = await AvifWasm.create();
-    }
-    initAvif();
+    (async function initAvif() {
+        try {
+            await window.avifInit();
+            avifReady = true;
+        } catch(e) {
+            console.error("AVIF WASM加载失败", e);
+        }
+    })();
 
     function formatSize(bytes) {
         if (!bytes) return "";
@@ -508,6 +520,7 @@
     async function processItem(item) {
         const statusEl = document.getElementById("status-" + item.id);
         const downloadBtn = document.getElementById("download-" + item.id);
+        const maxLongSide = Number(maxLongSideInput.value) || 3840;
 
         statusEl.textContent = "处理中...";
         downloadBtn.disabled = true;
@@ -517,11 +530,19 @@
             img.src = item.originalUrl;
             await new Promise((resolve) => (img.onload = resolve));
 
+            let w = img.width;
+            let h = img.height;
+            if(w > maxLongSide || h > maxLongSide) {
+                const scale = maxLongSide / Math.max(w,h);
+                w = Math.round(w * scale);
+                h = Math.round(h * scale);
+            }
+
             const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
+            canvas.width = w;
+            canvas.height = h;
             const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, 0, 0, w, h);
 
             drawWatermark(ctx, canvas.width, canvas.height);
 
@@ -534,17 +555,10 @@
                     canvas.toBlob(resolve, "image/webp", quality);
                 });
             } else if (fmt === "avif") {
-                if (!avifEncoder) {
-                    throw new Error("AVIF编码器未加载");
-                }
+                if (!avifReady) throw new Error("AVIF编码器未加载完成，请刷新页面重试");
                 const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const avifBuf = avifEncoder.encode(
-                    imgData.data,
-                    canvas.width,
-                    canvas.height,
-                    quality
-                );
-                blob = new Blob([avifBuf], { type: "image/avif" });
+                const avifBuffer = await window.avifEncode(imgData, {quality: Math.round(quality * 100)});
+                blob = new Blob([avifBuffer], { type: "image/avif" });
             }
 
             if (item.outputUrl) {
@@ -563,8 +577,8 @@
             statusEl.textContent = `完成 · ${formatSize(blob.size)}`;
             downloadBtn.disabled = false;
         } catch (err) {
-            statusEl.textContent = "处理失败";
-            console.error(err);
+            statusEl.textContent = `失败：${err.message.slice(0,35)}`;
+            console.error(item.name, err);
         }
     }
 
@@ -600,10 +614,7 @@
         const baseName = item.name.replace(/\.[^.]+$/, "");
         const ext = outputFormat.value;
         a.download = `${baseName}.weite.net.${ext}`;
-        a.click();
     }
 </script>
 </body>
 </html>
-
-
