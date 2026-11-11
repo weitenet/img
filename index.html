@@ -5,205 +5,60 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>图片批量压缩 · WebP / AVIF 水印工具</title>
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
 
-    body {
-        background: #f3f4f6;
-        padding: 32px 16px;
-        max-width: 1000px;
-        margin: 0 auto;
-        color: #1f2937;
-    }
+    body { background: #f3f4f6; padding: 32px 16px; max-width: 1000px; margin: 0 auto; color: #1f2937; }
 
-    .container {
-        background: #fff;
-        border-radius: 16px;
-        padding: 32px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-    }
+    .container { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
 
-    h1 {
-        text-align: center;
-        font-size: 24px;
-        margin-bottom: 24px;
-    }
+    h1 { text-align: center; font-size: 24px; margin-bottom: 24px; }
 
-    .upload-area {
-        border: 2px dashed #9ca3af;
-        border-radius: 12px;
-        padding: 48px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: 0.25s;
-        background: #fafafa;
-    }
+    .upload-area { border: 2px dashed #9ca3af; border-radius: 12px; padding: 48px 20px; text-align: center;
+        cursor: pointer; transition: .25s; background: #fafafa; }
+    .upload-area:hover { border-color: #3b82f6; background: #f0f7ff; }
+    .upload-area input { display: none; }
 
-    .upload-area:hover {
-        border-color: #3b82f6;
-        background: #f0f7ff;
-    }
+    .section-title { margin: 24px 0 12px; font-size: 16px; font-weight: 600; color: #374151; }
 
-    .upload-area input {
-        display: none;
-    }
+    .control-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+    .control-item { display: flex; flex-direction: column; gap: 6px; }
 
-    .section-title {
-        margin: 24px 0 12px;
-        font-size: 16px;
-        font-weight: 600;
-        color: #374151;
-    }
+    label { font-size: 14px; color: #4b5563; }
 
-    .control-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 14px;
+    input[type="text"], input[type="number"], select {
+        padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; width: 100%;
     }
+    input[type="range"] { width: 100%; }
 
-    .control-item {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
 
-    label {
-        font-size: 14px;
-        color: #4b5563;
-    }
+    .btn { padding: 10px 20px; border: none; border-radius: 8px; background: #2563eb; color: #fff;
+        font-size: 15px; cursor: pointer; transition: .2s; }
+    .btn:hover { background: #1d4ed8; }
+    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-secondary { background: #64748b; }
+    .btn-secondary:hover { background: #475569; }
 
-    input[type="text"],
-    input[type="number"],
-    select {
-        padding: 8px 10px;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        font-size: 14px;
-        outline: none;
-        width: 100%;
-    }
+    .progress-text { font-size: 14px; color: #4b5563; margin-left: 8px; }
 
-    input[type="range"] {
-        width: 100%;
-    }
+    .list-title { margin-top: 28px; font-size: 16px; font-weight: 600; color: #374151; }
 
-    .row {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-top: 18px;
-    }
+    .image-list { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
 
-    .btn {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        background: #2563eb;
-        color: #fff;
-        font-size: 15px;
-        cursor: pointer;
-        transition: 0.2s;
-    }
+    .image-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; background: #fff; }
+    .image-card img { width: 100%; height: 140px; object-fit: contain; border-radius: 8px; background: #f9fafb; }
+    .image-card .card-info { margin-top: 8px; font-size: 13px; color: #4b5563; line-height: 1.5; word-break: break-all; }
+    .image-card .card-status { margin-top: 6px; font-size: 12px; color: #6b7280; }
 
-    .btn:hover {
-        background: #1d4ed8;
-    }
+    /* 下载按钮改成 <a>，走浏览器原生下载，不依赖 a.click() 合成点击 */
+    .download-btn { display: block; margin-top: 10px; width: 100%; padding: 8px; border-radius: 8px;
+        background: #2563eb; color: #fff; font-size: 14px; text-align: center; text-decoration: none;
+        cursor: pointer; user-select: none; }
+    .download-btn:hover { background: #1d4ed8; }
+    .download-btn.disabled { background: #94a3b8; cursor: not-allowed; pointer-events: none; }
 
-    .btn:disabled {
-        background: #94a3b8;
-        cursor: not-allowed;
-    }
-
-    .btn-secondary {
-        background: #64748b;
-    }
-
-    .btn-secondary:hover {
-        background: #475569;
-    }
-
-    .progress-text {
-        font-size: 14px;
-        color: #4b5563;
-        margin-left: 8px;
-    }
-
-    .list-title {
-        margin-top: 28px;
-        font-size: 16px;
-        font-weight: 600;
-        color: #374151;
-    }
-
-    .image-list {
-        margin-top: 12px;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 16px;
-    }
-
-    .image-card {
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 12px;
-        background: #fff;
-    }
-
-    .image-card img {
-        width: 100%;
-        height: 140px;
-        object-fit: contain;
-        border-radius: 8px;
-        background: #f9fafb;
-    }
-
-    .image-card .card-info {
-        margin-top: 8px;
-        font-size: 13px;
-        color: #4b5563;
-        line-height: 1.5;
-        word-break: break-all;
-    }
-
-    .image-card .card-status {
-        margin-top: 6px;
-        font-size: 12px;
-        color: #6b7280;
-    }
-
-    .image-card .download-btn {
-        margin-top: 10px;
-        width: 100%;
-        padding: 8px;
-        border: none;
-        border-radius: 8px;
-        background: #2563eb;
-        color: #fff;
-        font-size: 14px;
-        cursor: pointer;
-    }
-
-    .image-card .download-btn:disabled {
-        background: #94a3b8;
-        cursor: not-allowed;
-    }
-
-    .switch {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 4px;
-    }
-
-    .switch input {
-        width: 16px;
-        height: 16px;
-    }
+    .switch { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .switch input { width: 16px; height: 16px; }
 </style>
 <script type="module">
 import { encode as avifEncode, init as avifInit } from 'https://cdn.jsdelivr.net/npm/@jsquash/avif@2.1.1/+esm';
@@ -236,7 +91,7 @@ window.avifInit = avifInit;
         </div>
         <div class="control-item">
             <label>长边最大像素（防止大图崩溃）</label>
-            <input type="number" id="maxLongSide" value="3840" min="1000" max="8000" step="100">
+            <input type="number" id="maxLongSide" value="3840" min="1000" max="8000" step="100" />
         </div>
     </div>
 
@@ -324,7 +179,7 @@ window.avifInit = avifInit;
         try {
             await window.avifInit();
             avifReady = true;
-        } catch(e) {
+        } catch (e) {
             console.error("AVIF WASM加载失败", e);
         }
     })();
@@ -338,110 +193,83 @@ window.avifInit = avifInit;
 
     function hexToRgba(hex, alpha) {
         const h = hex.replace("#", "");
-        const full = h.length === 3
-            ? h.split("").map((c) => c + c).join("")
-            : h;
+        const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
         const num = parseInt(full, 16);
-        const r = (num >> 16) & 255;
-        const g = (num >> 8) & 255;
-        const b = num & 255;
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
     }
 
-    qualitySlider.addEventListener("input", () => {
-        qualityVal.textContent = qualitySlider.value;
-    });
-
-    fontSizeSlider.addEventListener("input", () => {
-        fontSizeVal.textContent = fontSizeSlider.value;
-    });
-
-    opacitySlider.addEventListener("input", () => {
-        opacityVal.textContent = opacitySlider.value;
-    });
+    qualitySlider.addEventListener("input", () => { qualityVal.textContent = qualitySlider.value; });
+    fontSizeSlider.addEventListener("input", () => { fontSizeVal.textContent = fontSizeSlider.value; });
+    opacitySlider.addEventListener("input", () => { opacityVal.textContent = opacitySlider.value; });
 
     uploadBox.addEventListener("click", () => fileInput.click());
-
-    uploadBox.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        uploadBox.style.borderColor = "#2563eb";
-    });
-
-    uploadBox.addEventListener("dragleave", () => {
-        uploadBox.style.borderColor = "#9ca3af";
-    });
-
+    uploadBox.addEventListener("dragover", (e) => { e.preventDefault(); uploadBox.style.borderColor = "#2563eb"; });
+    uploadBox.addEventListener("dragleave", () => { uploadBox.style.borderColor = "#9ca3af"; });
     uploadBox.addEventListener("drop", (e) => {
         e.preventDefault();
         uploadBox.style.borderColor = "#9ca3af";
-        if (e.dataTransfer.files.length) {
-            handleFiles(e.dataTransfer.files);
-        }
+        if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
     });
-
-    fileInput.addEventListener("change", () => {
-        if (fileInput.files.length) {
-            handleFiles(fileInput.files);
-        }
-    });
+    fileInput.addEventListener("change", () => { if (fileInput.files.length) handleFiles(fileInput.files); });
 
     clearBtn.addEventListener("click", () => {
+        imageItems.forEach((it) => {
+            URL.revokeObjectURL(it.originalUrl);
+            if (it.outputUrl) URL.revokeObjectURL(it.outputUrl);
+        });
         imageItems = [];
         imageList.innerHTML = "";
         compressBtn.disabled = true;
         clearBtn.disabled = true;
         progressText.textContent = "";
+        fileInput.value = "";
     });
 
     function handleFiles(fileList) {
-        const files = Array.from(fileList).filter((file) =>
-            file.type.startsWith("image/")
-        );
-
-        if (!files.length) {
-            alert("请选择图片文件");
-            return;
-        }
+        const files = Array.from(fileList).filter((file) => file.type.startsWith("image/"));
+        if (!files.length) { alert("请选择图片文件"); return; }
 
         files.forEach((file) => {
             const item = {
                 id: Date.now() + "_" + Math.random().toString(36).slice(2, 8),
-                file: file,
                 name: file.name,
                 originalSize: file.size,
                 originalUrl: URL.createObjectURL(file),
                 processed: false,
                 blob: null,
-                outputUrl: null
+                outputUrl: null,
+                outputFormat: null
             };
-
             imageItems.push(item);
             renderImageCard(item);
         });
 
         compressBtn.disabled = false;
         clearBtn.disabled = false;
+        fileInput.value = "";
     }
 
     function renderImageCard(item) {
         const card = document.createElement("div");
         card.className = "image-card";
         card.id = "card-" + item.id;
-
         card.innerHTML = `
-            <img src="${item.originalUrl}" alt="${item.name}" />
+            <img src="${item.originalUrl}" alt="" />
             <div class="card-info">
                 <div><strong>${item.name}</strong></div>
                 <div>原始：${formatSize(item.originalSize)}</div>
                 <div class="card-status" id="status-${item.id}">等待处理</div>
             </div>
-            <button class="download-btn" id="download-${item.id}" disabled>下载</button>
+            <a class="download-btn disabled" id="download-${item.id}" aria-disabled="true">下载</a>
         `;
-
         imageList.appendChild(card);
 
-        card.querySelector(`#download-${item.id}`).addEventListener("click", () => {
-            downloadItem(item);
+        const link = document.getElementById("download-" + item.id);
+        // 处理完成前不触发下载；完成后由 <a download> 交给浏览器原生下载
+        link.addEventListener("click", (e) => {
+            if (!item.blob || link.classList.contains("disabled")) {
+                e.preventDefault();
+            }
         });
     }
 
@@ -467,9 +295,7 @@ window.avifInit = avifInit;
         }
 
         const drawText = (x, y) => {
-            if (enableStroke.checked) {
-                ctx.strokeText(text, x, y);
-            }
+            if (enableStroke.checked) ctx.strokeText(text, x, y);
             ctx.fillText(text, x, y);
         };
 
@@ -478,62 +304,43 @@ window.avifInit = avifInit;
             const stepY = fontSize * 4;
             ctx.translate(width / 2, height / 2);
             ctx.rotate(-Math.PI / 10);
-
             for (let y = -height; y < height; y += stepY) {
-                for (let x = -width; x < width; x += stepX) {
-                    drawText(x, y);
-                }
+                for (let x = -width; x < width; x += stepX) drawText(x, y);
             }
         } else {
-            let x = width / 2;
-            let y = height / 2;
+            let x = width / 2, y = height / 2;
             const padding = fontSize;
 
-            if (position === "leftTop") {
-                ctx.textAlign = "left";
-                ctx.textBaseline = "top";
-                x = padding;
-                y = padding;
-            } else if (position === "rightTop") {
-                ctx.textAlign = "right";
-                ctx.textBaseline = "top";
-                x = width - padding;
-                y = padding;
-            } else if (position === "leftBottom") {
-                ctx.textAlign = "left";
-                ctx.textBaseline = "bottom";
-                x = padding;
-                y = height - padding;
-            } else if (position === "rightBottom") {
-                ctx.textAlign = "right";
-                ctx.textBaseline = "bottom";
-                x = width - padding;
-                y = height - padding;
-            }
+            if (position === "leftTop") { ctx.textAlign = "left"; ctx.textBaseline = "top"; x = padding; y = padding; }
+            else if (position === "rightTop") { ctx.textAlign = "right"; ctx.textBaseline = "top"; x = width - padding; y = padding; }
+            else if (position === "leftBottom") { ctx.textAlign = "left"; ctx.textBaseline = "bottom"; x = padding; y = height - padding; }
+            else if (position === "rightBottom") { ctx.textAlign = "right"; ctx.textBaseline = "bottom"; x = width - padding; y = height - padding; }
 
             drawText(x, y);
         }
-
         ctx.restore();
     }
 
     async function processItem(item) {
         const statusEl = document.getElementById("status-" + item.id);
-        const downloadBtn = document.getElementById("download-" + item.id);
-        const maxLongSide = Number(maxLongSideInput.value) || 3840;
+        const link = document.getElementById("download-" + item.id);
+        const limit = Number(maxLongSideInput.value) || 3840;
 
         statusEl.textContent = "处理中...";
-        downloadBtn.disabled = true;
+        link.classList.add("disabled");
+        link.setAttribute("aria-disabled", "true");
 
         try {
             const img = new Image();
             img.src = item.originalUrl;
-            await new Promise((resolve) => (img.onload = resolve));
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = () => reject(new Error("图片读取失败（文件可能损坏）"));
+            });
 
-            let w = img.width;
-            let h = img.height;
-            if(w > maxLongSide || h > maxLongSide) {
-                const scale = maxLongSide / Math.max(w,h);
+            let w = img.width, h = img.height;
+            if (w > limit || h > limit) {
+                const scale = limit / Math.max(w, h);
                 w = Math.round(w * scale);
                 h = Math.round(h * scale);
             }
@@ -544,47 +351,54 @@ window.avifInit = avifInit;
             const ctx = canvas.getContext("2d");
             ctx.drawImage(img, 0, 0, w, h);
 
-            drawWatermark(ctx, canvas.width, canvas.height);
+            drawWatermark(ctx, w, h);
 
             const fmt = outputFormat.value;
             const quality = Number(qualitySlider.value);
-            let blob;
+            let blob = null;
+            let actualFormat = fmt;
 
             if (fmt === "webp") {
-                blob = await new Promise((resolve) => {
-                    canvas.toBlob(resolve, "image/webp", quality);
-                });
-            } else if (fmt === "avif") {
+                blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+                if (!blob) throw new Error("WebP 编码失败");
+            } else {
                 if (!avifReady) throw new Error("AVIF编码器未加载完成，请刷新页面重试");
-                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const avifBuffer = await window.avifEncode(imgData, {quality: Math.round(quality * 100)});
-                blob = new Blob([avifBuffer], { type: "image/avif" });
+                const imgData = ctx.getImageData(0, 0, w, h);
+                const buf = await window.avifEncode(imgData, { quality: Math.round(quality * 100) });
+                if (!buf || !buf.byteLength) throw new Error("AVIF 编码返回空数据");
+                blob = new Blob([buf], { type: "image/avif" });
             }
 
-            if (item.outputUrl) {
-                URL.revokeObjectURL(item.outputUrl);
-            }
+            if (item.outputUrl) URL.revokeObjectURL(item.outputUrl);
 
             item.processed = true;
             item.blob = blob;
+            item.outputFormat = actualFormat;
             item.outputUrl = URL.createObjectURL(blob);
 
+            // 预览统一用 canvas → webp dataURL，AVIF 在部分浏览器 <img> 里会白屏
             const card = document.getElementById("card-" + item.id);
-            if (card) {
-                card.querySelector("img").src = item.outputUrl;
-            }
+            if (card) card.querySelector("img").src = canvas.toDataURL("image/webp", 0.7);
+
+            const baseName = item.name.replace(/\.[^.]+$/, "");
+            const fileName = `${baseName}.weite.net.${actualFormat}`;
+
+            // 关键：把下载按钮变成真正的原生链接
+            link.href = item.outputUrl;
+            link.download = fileName;
+            link.removeAttribute("aria-disabled");
+            link.classList.remove("disabled");
+            link.textContent = `下载 ${actualFormat.toUpperCase()}`;
 
             statusEl.textContent = `完成 · ${formatSize(blob.size)}`;
-            downloadBtn.disabled = false;
         } catch (err) {
-            statusEl.textContent = `失败：${err.message.slice(0,35)}`;
+            statusEl.textContent = `失败：${(err && err.message) ? err.message.slice(0, 30) : "未知错误"}`;
             console.error(item.name, err);
         }
     }
 
     async function runBatchProcess() {
         if (processing) return;
-
         processing = true;
         compressBtn.disabled = true;
 
@@ -604,17 +418,6 @@ window.avifInit = avifInit;
     }
 
     compressBtn.addEventListener("click", runBatchProcess);
-
-    function downloadItem(item) {
-        if (!item.processed || !item.blob) return;
-
-        const a = document.createElement("a");
-        a.href = item.outputUrl;
-
-        const baseName = item.name.replace(/\.[^.]+$/, "");
-        const ext = outputFormat.value;
-        a.download = `${baseName}.weite.net.${ext}`;
-    }
 </script>
 </body>
 </html>
